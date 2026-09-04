@@ -1,33 +1,3 @@
-Skip to content
-DEVENDRA-5470
-SecOps
-Repository navigation
-Code
-Issues
-Pull requests
-Agents
-Actions
-Projects
-Security and quality
-Insights
-DEVENDRA-5470
-SecOps
-Public
-Go to file
-t
-T
-DEVENDRA-5470
-DEVENDRA-5470
-first commit
-504634f
- · 
-3 minutes ago
-Name		
-README.md
-first commit
-3 minutes ago
-Repository files navigation
-README
 What is DevSecOps?
 
 DevSecOps means integrating security controls throughout the Software Development Life Cycle (SDLC) instead of treating security as a final manual stage.
@@ -284,38 +254,3 @@ DevSecOps = Development + Security + Operations
 
       Continuous Security
 This keeps all of your original topics and tools while making the README more professional, consistent, and suitable for a GitHub DevSecOps learning/project repository.
-
-About
-No description, website, or topics provided.
-Resources
-Readme
-Activity
-Stars
-0 stars
-Watchers
-0 watching
-Forks
-0 forks
-Report repository
-Releases
-No releases published
-Packages
-No packages published
-Contributors
-1
- (1)
-@DEVENDRA-5470
-DEVENDRA-5470Devendra
-Footer
-© 2026 GitHub, Inc.
-Footer navigation
-Terms
-Privacy
-Security
-Status
-Community
-Docs
-Contact
-Manage cookies
-Do not share my personal information
- 
