@@ -176,7 +176,7 @@ jobs:
       - name: Check SonarQube Configuration
         shell: bash
         env:
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SONAR_HOST: ${{ secrets.SONAR_HOST }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
         run: |
@@ -185,9 +185,9 @@ jobs:
           echo "SonarQube Configuration"
           echo "======================================"
 
-          if [ -z "$SONAR_HOST_URL" ]; then
+          if [ -z "$SONAR_HOST" ]; then
 
-            echo "ERROR: SONAR_HOST_URL secret is missing."
+            echo "ERROR: SONAR_HOST secret is missing."
 
             exit 1
 
@@ -201,7 +201,7 @@ jobs:
 
           fi
 
-          echo "SonarQube URL: $SONAR_HOST_URL"
+          echo "SonarQube URL: $SONAR_HOST"
 
           echo "SonarQube token: configured"
 
@@ -215,7 +215,7 @@ jobs:
       - name: Test SonarQube Connectivity
         shell: bash
         env:
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SONAR_HOST: ${{ secrets.SONAR_HOST }}
 
         run: |
 
@@ -226,7 +226,7 @@ jobs:
           RESPONSE=$(curl -s \
             --connect-timeout 10 \
             --max-time 20 \
-            "$SONAR_HOST_URL/api/system/status" || true)
+            "$SONAR_HOST/api/system/status" || true)
 
           echo "Response:"
           echo "$RESPONSE"
@@ -253,7 +253,7 @@ jobs:
       - name: Wait for SonarQube Server to be Ready
         shell: bash
         env:
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SONAR_HOST: ${{ secrets.SONAR_HOST }}
 
         run: |
 
@@ -261,7 +261,7 @@ jobs:
           echo "Waiting for SonarQube"
           echo "======================================"
 
-          echo "SonarQube URL: $SONAR_HOST_URL"
+          echo "SonarQube URL: $SONAR_HOST"
 
           echo "Maximum wait time: 10 minutes"
 
@@ -275,7 +275,7 @@ jobs:
             RESPONSE=$(curl -s \
               --connect-timeout 5 \
               --max-time 10 \
-              "$SONAR_HOST_URL/api/system/status" || true)
+              "$SONAR_HOST/api/system/status" || true)
 
             echo "Response:"
             echo "$RESPONSE"
@@ -313,7 +313,7 @@ jobs:
           curl -v \
             --connect-timeout 10 \
             --max-time 20 \
-            "$SONAR_HOST_URL/api/system/status" || true
+            "$SONAR_HOST/api/system/status" || true
 
           exit 1
 
@@ -344,7 +344,7 @@ jobs:
       - name: Scan Backend Code
         shell: bash
         env:
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SONAR_HOST: ${{ secrets.SONAR_HOST }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
         run: |
@@ -363,7 +363,7 @@ jobs:
             -Dsonar.projectName=hireflow-backend \
             -Dsonar.sources=/usr/src \
             -Dsonar.exclusions="**/node_modules/**,**/dist/**,**/build/**,**/coverage/**" \
-            -Dsonar.host.url="$SONAR_HOST_URL" \
+            -Dsonar.host.url="$SONAR_HOST" \
             -Dsonar.token="$SONAR_TOKEN"
 
           echo ""
@@ -380,7 +380,7 @@ jobs:
         if: always()
         shell: bash
         env:
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SONAR_HOST: ${{ secrets.SONAR_HOST }}
 
         run: |
 
@@ -391,11 +391,11 @@ jobs:
 
           echo ""
           echo "SonarQube Server:"
-          echo "$SONAR_HOST_URL"
+          echo "$SONAR_HOST"
 
           echo ""
           echo "Backend Dashboard:"
-          echo "$SONAR_HOST_URL/dashboard?id=hireflow-backend"
+          echo "$SONAR_HOST/dashboard?id=hireflow-backend"
 
           echo ""
           echo "Project Key:"
