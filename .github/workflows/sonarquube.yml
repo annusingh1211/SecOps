@@ -37,7 +37,7 @@ jobs:
 
             echo "ref=${{ github.event.inputs.commit_sha }}" >> "$GITHUB_OUTPUT"
 
-            echo "repository=annusingh1211/DevSecOps_file" >> "$GITHUB_OUTPUT"
+            echo "repository=annusingh1211/SecOps" >> "$GITHUB_OUTPUT"
 
           else
 
@@ -49,7 +49,7 @@ jobs:
 
             else
 
-              echo "repository=annusingh1211/DevSecOps_file" >> "$GITHUB_OUTPUT"
+              echo "repository=annusingh1211/SecOps" >> "$GITHUB_OUTPUT"
 
             fi
 
@@ -202,7 +202,6 @@ jobs:
           fi
 
           echo "SonarQube URL: $SONAR_HOST_URL"
-
           echo "SonarQube token: configured"
 
           echo "======================================"
@@ -262,7 +261,6 @@ jobs:
           echo "======================================"
 
           echo "SonarQube URL: $SONAR_HOST_URL"
-
           echo "Maximum wait time: 10 minutes"
 
           for i in $(seq 1 60); do
@@ -298,7 +296,6 @@ jobs:
             fi
 
             echo "SonarQube is not ready."
-
             echo "Waiting 10 seconds..."
 
             sleep 10
@@ -354,17 +351,18 @@ jobs:
           echo "======================================"
 
           echo "Project Key: hireflow-backend"
+          echo "SonarQube URL: $SONAR_HOST_URL"
 
           docker run --rm \
-          --network host \
-          -v "${GITHUB_WORKSPACE}/application/backend:/usr/src" \
-          sonarsource/sonar-scanner-cli:latest \
-          -Dsonar.projectKey=hireflow-backend \
-          -Dsonar.projectName=hireflow-backend \
-          -Dsonar.sources=/usr/src \
-          -Dsonar.exclusions="**/node_modules/**,**/dist/**,**/build/**,**/coverage/**" \
-          -Dsonar.host.url="$SONAR_HOST_URL" \
-          -Dsonar.token="$SONAR_TOKEN"
+            --network host \
+            -v "${GITHUB_WORKSPACE}/application/backend:/usr/src" \
+            sonarsource/sonar-scanner-cli:latest \
+            -Dsonar.projectKey=hireflow-backend \
+            -Dsonar.projectName=hireflow-backend \
+            -Dsonar.sources=/usr/src \
+            -Dsonar.exclusions="**/node_modules/**,**/dist/**,**/build/**,**/coverage/**" \
+            -Dsonar.host.url="$SONAR_HOST_URL" \
+            -Dsonar.token="$SONAR_TOKEN"
 
           echo ""
           echo "======================================"
