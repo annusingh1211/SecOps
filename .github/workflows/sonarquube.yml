@@ -17,7 +17,9 @@ permissions:
 
 jobs:
   sonarqube-scan:
+
     name: SonarQube - Code Quality & Smell
+
     runs-on: self-hosted
 
     steps:
@@ -30,18 +32,20 @@ jobs:
         id: resolve
         shell: bash
         run: |
+
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+
             echo "ref=${{ github.event.inputs.commit_sha }}" >> "$GITHUB_OUTPUT"
-            echo "repository=annusingh1211/SecOps" >> "$GITHUB_OUTPUT"
+
           else
+
             echo "ref=${{ github.event.client_payload.commit_sha }}" >> "$GITHUB_OUTPUT"
 
-            if [ -n "${{ github.event.client_payload.repository }}" ]; then
-              echo "repository=${{ github.event.client_payload.repository }}" >> "$GITHUB_OUTPUT"
-            else
-              echo "repository=annusingh1211/SecOps" >> "$GITHUB_OUTPUT"
-            fi
           fi
+
+          # Always use the correct repository
+          echo "repository=annusingh1211/SecOps" >> "$GITHUB_OUTPUT"
+
 
       # ============================================================
       # 2. Display Application Information
@@ -49,15 +53,19 @@ jobs:
 
       - name: Display Application Information
         run: |
+
           echo "======================================"
           echo "SonarQube Scan Triggered"
           echo "======================================"
+
           echo "Event      : ${{ github.event_name }}"
           echo "Repository : ${{ steps.resolve.outputs.repository }}"
           echo "Target Ref : ${{ steps.resolve.outputs.ref }}"
           echo "Runner     : $RUNNER_NAME"
           echo "OS         : $RUNNER_OS"
+
           echo "======================================"
+
 
       # ============================================================
       # 3. Checkout Application
@@ -66,9 +74,10 @@ jobs:
       - name: Checkout Application
         uses: actions/checkout@v4
         with:
-          repository: ${{ steps.resolve.outputs.repository }}
+          repository: annusingh1211/SecOps
           ref: ${{ steps.resolve.outputs.ref }}
           path: application
+
 
       # ============================================================
       # 4. Verify Checkout
@@ -77,25 +86,29 @@ jobs:
       - name: Verify Checked Out Commit
         shell: bash
         run: |
+
           echo "======================================"
           echo "Application Checkout Verification"
           echo "======================================"
 
           echo "Repository:"
-          echo "${{ steps.resolve.outputs.repository }}"
+          echo "annusingh1211/SecOps"
 
           echo "Requested Ref:"
           echo "${{ steps.resolve.outputs.ref }}"
 
           echo ""
           echo "Actual Commit:"
+
           git -C application rev-parse HEAD
 
           echo ""
           echo "Application Files:"
+
           ls -la application
 
           echo "======================================"
+
 
       # ============================================================
       # 5. Verify Backend
@@ -104,20 +117,27 @@ jobs:
       - name: Verify Backend Source
         shell: bash
         run: |
+
           echo "======================================"
           echo "Checking Backend Directory"
           echo "======================================"
 
           if [ ! -d "application/backend" ]; then
+
             echo "ERROR: application/backend directory does not exist."
+
             find application -maxdepth 2 -type d | sort
+
             exit 1
+
           fi
 
           echo "Backend directory found."
+
           ls -la application/backend
 
           echo "======================================"
+
 
       # ============================================================
       # 6. Verify Docker
@@ -126,15 +146,19 @@ jobs:
       - name: Verify Docker
         shell: bash
         run: |
+
           echo "======================================"
           echo "Checking Docker"
           echo "======================================"
 
           docker --version
+
           docker info > /dev/null
 
           echo "Docker is available."
+
           echo "======================================"
+
 
       # ============================================================
       # 7. Check SonarQube Secrets
@@ -145,25 +169,34 @@ jobs:
         env:
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
         run: |
+
           echo "======================================"
           echo "SonarQube Configuration"
           echo "======================================"
 
           if [ -z "$SONAR_HOST_URL" ]; then
+
             echo "ERROR: SONAR_HOST_URL secret is missing."
+
             exit 1
+
           fi
 
           if [ -z "$SONAR_TOKEN" ]; then
+
             echo "ERROR: SONAR_TOKEN secret is missing."
+
             exit 1
+
           fi
 
           echo "SonarQube URL: $SONAR_HOST_URL"
           echo "SonarQube token: configured"
 
           echo "======================================"
+
 
       # ============================================================
       # 8. Test SonarQube Connectivity
@@ -173,7 +206,9 @@ jobs:
         shell: bash
         env:
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
         run: |
+
           echo "======================================"
           echo "Testing SonarQube Connectivity"
           echo "======================================"
@@ -187,13 +222,19 @@ jobs:
           echo "$RESPONSE"
 
           if echo "$RESPONSE" | grep -q '"status":"UP"'; then
+
             echo "SUCCESS: SonarQube is reachable and UP."
+
           else
+
             echo "ERROR: SonarQube is not reachable or not UP."
+
             exit 1
+
           fi
 
           echo "======================================"
+
 
       # ============================================================
       # 9. Wait for SonarQube
@@ -203,7 +244,9 @@ jobs:
         shell: bash
         env:
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
         run: |
+
           echo "======================================"
           echo "Waiting for SonarQube"
           echo "======================================"
@@ -212,6 +255,7 @@ jobs:
           echo "Maximum wait time: 10 minutes"
 
           for i in $(seq 1 60); do
+
             echo ""
             echo "--------------------------------------"
             echo "Attempt $i/60"
@@ -232,16 +276,22 @@ jobs:
             echo "Status: ${STATUS:-UNKNOWN}"
 
             if [ "$STATUS" = "UP" ]; then
+
               echo ""
               echo "======================================"
               echo "SUCCESS: SonarQube is UP"
               echo "======================================"
+
               exit 0
+
             fi
 
             echo "SonarQube is not ready."
+
             echo "Waiting 10 seconds..."
+
             sleep 10
+
           done
 
           echo ""
@@ -256,6 +306,7 @@ jobs:
 
           exit 1
 
+
       # ============================================================
       # 10. Pull SonarScanner Image
       # ============================================================
@@ -263,6 +314,7 @@ jobs:
       - name: Pull SonarScanner Image
         shell: bash
         run: |
+
           echo "======================================"
           echo "Pulling SonarScanner Docker Image"
           echo "======================================"
@@ -270,7 +322,9 @@ jobs:
           docker pull sonarsource/sonar-scanner-cli:latest
 
           echo "SonarScanner image ready."
+
           echo "======================================"
+
 
       # ============================================================
       # 11. SonarQube Backend Scan
@@ -281,7 +335,9 @@ jobs:
         env:
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
         run: |
+
           echo "======================================"
           echo "Starting Backend SonarQube Scan"
           echo "======================================"
@@ -305,6 +361,7 @@ jobs:
           echo "Backend SonarQube Scan Completed"
           echo "======================================"
 
+
       # ============================================================
       # 12. SonarQube Dashboard
       # ============================================================
@@ -314,7 +371,9 @@ jobs:
         shell: bash
         env:
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
         run: |
+
           echo ""
           echo "======================================"
           echo "SonarQube Analysis"
