@@ -37,14 +37,23 @@ jobs:
 
             echo "ref=${{ github.event.inputs.commit_sha }}" >> "$GITHUB_OUTPUT"
 
+            echo "repository=annusingh1211/SecOps" >> "$GITHUB_OUTPUT"
+
           else
 
             echo "ref=${{ github.event.client_payload.commit_sha }}" >> "$GITHUB_OUTPUT"
 
-          fi
+            if [ -n "${{ github.event.client_payload.repository }}" ]; then
 
-          # Always use the correct repository
-          echo "repository=annusingh1211/SecOps" >> "$GITHUB_OUTPUT"
+              echo "repository=${{ github.event.client_payload.repository }}" >> "$GITHUB_OUTPUT"
+
+            else
+
+              echo "repository=annusingh1211/SecOps" >> "$GITHUB_OUTPUT"
+
+            fi
+
+          fi
 
 
       # ============================================================
@@ -74,7 +83,7 @@ jobs:
       - name: Checkout Application
         uses: actions/checkout@v4
         with:
-          repository: annusingh1211/SecOps
+          repository: ${{ steps.resolve.outputs.repository }}
           ref: ${{ steps.resolve.outputs.ref }}
           path: application
 
@@ -92,7 +101,7 @@ jobs:
           echo "======================================"
 
           echo "Repository:"
-          echo "annusingh1211/SecOps"
+          echo "${{ steps.resolve.outputs.repository }}"
 
           echo "Requested Ref:"
           echo "${{ steps.resolve.outputs.ref }}"
@@ -193,6 +202,7 @@ jobs:
           fi
 
           echo "SonarQube URL: $SONAR_HOST_URL"
+
           echo "SonarQube token: configured"
 
           echo "======================================"
@@ -252,6 +262,7 @@ jobs:
           echo "======================================"
 
           echo "SonarQube URL: $SONAR_HOST_URL"
+
           echo "Maximum wait time: 10 minutes"
 
           for i in $(seq 1 60); do
@@ -343,7 +354,6 @@ jobs:
           echo "======================================"
 
           echo "Project Key: hireflow-backend"
-          echo "SonarQube URL: $SONAR_HOST_URL"
 
           docker run --rm \
             --network host \
