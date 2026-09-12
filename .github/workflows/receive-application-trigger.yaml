@@ -119,9 +119,10 @@ jobs:
             -Dsonar.projectKey=hireflow-backend \
             -Dsonar.projectName=hireflow-backend \
             -Dsonar.sources=/usr/src \
-            -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/build/**,**/coverage/** \
-            -Dsonar.host.url=http://51.20.221.230:9000/ \
+            -Dsonar.exclusions="**/node_modules/**,**/dist/**,**/build/**,**/coverage/**" \
+            -Dsonar.host.url=http://51.20.221.230:9000 \
             -Dsonar.token=${{ secrets.SONAR_TOKEN }}
+
 
       # Uncomment once frontend testing begins
       # - name: Scan Frontend Code
