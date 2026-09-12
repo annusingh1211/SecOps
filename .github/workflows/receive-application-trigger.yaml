@@ -68,6 +68,7 @@ jobs:
           echo "====================================="
           find application -type f -print
 
+
   # Stage 2 : Code Quality & Smell Analysis (runs right after secret scanning)
   sonarqube-scan:
     name: SonarQube - Code Quality & Smell
@@ -143,9 +144,9 @@ jobs:
           pollingTimeoutSec: 300
 
         env:
-        SONAR_TOKEN: ${{secrets.SONAR_TOKEN}}
-        SONAR_HOST_URL: ${{vars.SONAR_HOST}}
-      
+          SONAR_TOKEN: ${{secrets.SONAR_TOKEN}}
+          SONAR_HOST_URL: ${{vars.SONAR_HOST}}
+
       - name: Show SonarQube Dashboard Links
         if: always()
         run: |
@@ -153,6 +154,7 @@ jobs:
           echo "SonarQube Analysis Complete"
           echo "====================================="
           echo "Backend Dashboard:  http://localhost:9000/dashboard?id=hireflow-backend"
+
 
   # Stage 3 : Dependency Scanning
   trivy-deps:
@@ -230,6 +232,7 @@ jobs:
         with:
           name: trivy-dependency-report
           path: application/trivy-fs-report.json
+
 
   # Stage 4 : Backend - Build, Scan, and Push
   build-scan-push-backend:
@@ -329,6 +332,7 @@ jobs:
 
           docker push ${IMAGE_NAME}:${{ github.event.client_payload.commit_sha }}
           docker push ${IMAGE_NAME}:latest
+
 
   # Stage 5 : Frontend - Build, Scan, and Push
   build-scan-push-frontend:
