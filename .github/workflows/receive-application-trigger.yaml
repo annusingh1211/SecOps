@@ -68,7 +68,6 @@ jobs:
           echo "====================================="
           find application -type f -print
 
-
   # Stage 2 : Code Quality & Smell Analysis (runs right after secret scanning)
   sonarqube-scan:
     name: SonarQube - Code Quality & Smell
@@ -119,10 +118,9 @@ jobs:
             -Dsonar.projectKey=hireflow-backend \
             -Dsonar.projectName=hireflow-backend \
             -Dsonar.sources=/usr/src \
-            -Dsonar.exclusions="**/node_modules/**,**/dist/**,**/build/**,**/coverage/**" \
-            -Dsonar.host.url=http://51.20.221.230:9000 \
+            -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/build/**,**/coverage/** \
+            -Dsonar.host.url=http://51.20.221.230:9000/ \
             -Dsonar.token=${{ secrets.SONAR_TOKEN }}
-
 
       # Uncomment once frontend testing begins
       # - name: Scan Frontend Code
@@ -139,7 +137,7 @@ jobs:
       #       -Dsonar.token=${{ secrets.SONAR_TOKEN }}
       - name: Debug Sonar Report
         run: |
-          echo "Searching for Report-task.txt......"
+          echo "Searching For report-task.txt......."
           find "${GITHUB_WORKSPACE}/application" -type f -name "report-task.txt" -print
       - name: SonarQube Quality Gate
         uses: SonarSource/sonarqube-quality-gate-action@master
@@ -148,8 +146,8 @@ jobs:
           pollingTimeoutSec: 300
 
         env:
-          SONAR_TOKEN: ${{secrets.SONAR_TOKEN}}
-          SONAR_HOST_URL: ${{vars.SONAR_HOST}}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ vars.SONAR_HOST }}
 
       - name: Show SonarQube Dashboard Links
         if: always()
@@ -157,8 +155,7 @@ jobs:
           echo "====================================="
           echo "SonarQube Analysis Complete"
           echo "====================================="
-          echo "Backend Dashboard: http://51.20.221.230:9000/dashboard?id=hireflow-backend"
-
+          echo "Backend Dashboard:  http://51.20.221.230:9000//dashboard?id=hireflow-backend"
 
   # Stage 3 : Dependency Scanning
   trivy-deps:
@@ -236,7 +233,6 @@ jobs:
         with:
           name: trivy-dependency-report
           path: application/trivy-fs-report.json
-
 
   # Stage 4 : Backend - Build, Scan, and Push
   build-scan-push-backend:
@@ -336,7 +332,6 @@ jobs:
 
           docker push ${IMAGE_NAME}:${{ github.event.client_payload.commit_sha }}
           docker push ${IMAGE_NAME}:latest
-
 
   # Stage 5 : Frontend - Build, Scan, and Push
   build-scan-push-frontend:
