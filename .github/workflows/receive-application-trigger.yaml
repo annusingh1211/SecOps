@@ -178,7 +178,7 @@ jobs:
             -Dsonar.sources=/usr/src \
             -Dsonar.exclusions="**/node_modules/**,**/dist/**,**/build/**,**/coverage/**" \
             -Dsonar.host.url=http://51.20.221.230:9000/ \
-            -Dsonar.token=${{ secrets.SONAR_TOKEN }}
+            -Dsonar.token=${{ secrets.SONAR_TOKEN_FRONTEND }}
 
 
       # ========================================================
