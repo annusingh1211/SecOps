@@ -10,12 +10,17 @@ permissions:
   packages: write
 
 jobs:
+
+  # ============================================================
   # Stage 1 : Secret Scanning
+  # ============================================================
+
   gitleaks:
     name: Gitleaks - Secret Scanning
     runs-on: ubuntu-latest
 
     steps:
+
       - name: Display Received Application Information
         run: |
           echo "SecOps Repo received Application trigger"
@@ -54,9 +59,11 @@ jobs:
         run: |
           echo "Gitleaks Findings:"
           echo "====================================="
+
           if [ -f "application/gitleaks-report.json" ]; then
             cat application/gitleaks-report.json | jq -r '
-              .[] | "File: \(.File)\nLine: \(.StartLine)\nRule: \(.RuleID)\nSecret: \(.Match)\nCommit: \(.Commit // "N/A")\n---"
+              .[] |
+              "File: \(.File)\nLine: \(.StartLine)\nRule: \(.RuleID)\nSecret: \(.Match)\nCommit: \(.Commit // "N/A")\n---"
             '
           else
             echo "No report file found — either no secrets were detected or the scan did not run."
@@ -68,13 +75,18 @@ jobs:
           echo "====================================="
           find application -type f -print
 
-  # Stage 2 : Code Quality & Smell Analysis (runs right after secret scanning)
+
+  # ============================================================
+  # Stage 2 : Code Quality & Smell Analysis
+  # ============================================================
+
   sonarqube-scan:
     name: SonarQube - Code Quality & Smell
     runs-on: self-hosted
     needs: gitleaks
 
     steps:
+
       - name: Display Received Application Information
         run: |
           echo "Running SonarQube analysis for commit ${{ github.event.client_payload.commit_sha }}"
@@ -94,47 +106,140 @@ jobs:
           echo "Checked Out Commit SHA:"
           git -C application rev-parse HEAD
 
+      # ========================================================
+      # WAIT FOR SONARQUBE SERVER
+      # ========================================================
+
       - name: Wait for Local SonarQube Server to be Ready
         run: |
-          echo "Checking SonarQube server availability at http://localhost:9000 ..."
+          echo "Checking SonarQube server availability at http://51.20.221.230:9000 ..."
+
           for i in $(seq 1 30); do
-            STATUS=$(curl -s http://localhost:9000/api/system/status | grep -o '"status":"[A-Z]*"' || echo "")
+
+            STATUS=$(curl -s http://51.20.221.230:9000/api/system/status | grep -o '"status":"[A-Z]*"' || echo "")
+
             echo "Attempt $i: $STATUS"
+
             if echo "$STATUS" | grep -q "UP"; then
               echo "SonarQube is UP."
               exit 0
             fi
+
             sleep 5
+
           done
+
           echo "SonarQube did not become ready in time."
           exit 1
+
+
+      # ========================================================
+      # BACKEND SONARQUBE SCAN
+      # ========================================================
+
+      - name: Prepare Backend Sonar Report Directory
+        run: |
+          mkdir -p "${GITHUB_WORKSPACE}/application/backend/.scannerwork"
+          chmod 777 "${GITHUB_WORKSPACE}/application/backend/.scannerwork"
 
       - name: Scan Backend Code
         run: |
           docker run --rm \
             --network host \
             -v "${GITHUB_WORKSPACE}/application/backend:/usr/src" \
+            -v "${GITHUB_WORKSPACE}/application/backend/.scannerwork:/tmp/.scannerwork" \
             sonarsource/sonar-scanner-cli:latest \
             -Dsonar.projectKey=hireflow-backend \
             -Dsonar.projectName=hireflow-backend \
             -Dsonar.sources=/usr/src \
-            -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/build/**,**/coverage/** \
+            -Dsonar.exclusions="**/node_modules/**,**/dist/**,**/build/**,**/coverage/**" \
             -Dsonar.host.url=http://51.20.221.230:9000/ \
             -Dsonar.token=${{ secrets.SONAR_TOKEN }}
 
-      # Uncomment once frontend testing begins
-      # - name: Scan Frontend Code
-      #   run: |
-      #     docker run --rm \
-      #       --network host \
-      #       -v "${GITHUB_WORKSPACE}/application/frontend:/usr/src" \
-      #       sonarsource/sonar-scanner-cli:latest \
-      #       -Dsonar.projectKey=hireflow-frontend \
-      #       -Dsonar.projectName=hireflow-frontend \
-      #       -Dsonar.sources=/usr/src \
-      #       -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/build/**,**/coverage/** \
-      #       -Dsonar.host.url=http://localhost:9000 \
-      #       -Dsonar.token=${{ secrets.SONAR_TOKEN }}
+
+      # ========================================================
+      # FRONTEND SONARQUBE SCAN
+      # ========================================================
+
+      - name: Prepare Frontend Sonar Report Directory
+        run: |
+          mkdir -p "${GITHUB_WORKSPACE}/application/frontend/.scannerwork"
+          chmod 777 "${GITHUB_WORKSPACE}/application/frontend/.scannerwork"
+
+      - name: Scan Frontend Code
+        run: |
+          docker run --rm \
+            --network host \
+            -v "${GITHUB_WORKSPACE}/application/frontend:/usr/src" \
+            -v "${GITHUB_WORKSPACE}/application/frontend/.scannerwork:/tmp/.scannerwork" \
+            sonarsource/sonar-scanner-cli:latest \
+            -Dsonar.projectKey=hireflow-frontend \
+            -Dsonar.projectName=hireflow-frontend \
+            -Dsonar.sources=/usr/src \
+            -Dsonar.exclusions="**/node_modules/**,**/dist/**,**/build/**,**/coverage/**" \
+            -Dsonar.host.url=http://51.20.221.230:9000/ \
+            -Dsonar.token=${{ secrets.SONAR_TOKEN }}
+
+
+      # ========================================================
+      # DEBUG SONARQUBE REPORTS
+      # ========================================================
+
+      - name: Debug Sonar Reports
+        if: always()
+        run: |
+          echo "====================================="
+          echo "Searching for SonarQube report-task.txt"
+          echo "====================================="
+
+          echo ""
+          echo "Backend report:"
+          if [ -f "application/backend/.scannerwork/report-task.txt" ]; then
+            cat application/backend/.scannerwork/report-task.txt
+          else
+            echo "Backend report-task.txt NOT FOUND"
+          fi
+
+          echo ""
+          echo "Frontend report:"
+          if [ -f "application/frontend/.scannerwork/report-task.txt" ]; then
+            cat application/frontend/.scannerwork/report-task.txt
+          else
+            echo "Frontend report-task.txt NOT FOUND"
+          fi
+
+
+      # ========================================================
+      # BACKEND QUALITY GATE
+      # ========================================================
+
+      - name: Backend SonarQube Quality Gate
+        uses: SonarSource/sonarqube-quality-gate-action@master
+        with:
+          scanMetadataReportFile: application/backend/.scannerwork/report-task.txt
+          pollingTimeoutSec: 300
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: http://51.20.221.230:9000
+
+
+      # ========================================================
+      # FRONTEND QUALITY GATE
+      # ========================================================
+
+      - name: Frontend SonarQube Quality Gate
+        uses: SonarSource/sonarqube-quality-gate-action@master
+        with:
+          scanMetadataReportFile: application/frontend/.scannerwork/report-task.txt
+          pollingTimeoutSec: 300
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: http://51.20.221.230:9000
+
+
+      # ========================================================
+      # SONARQUBE DASHBOARD LINKS
+      # ========================================================
 
       - name: Show SonarQube Dashboard Links
         if: always()
@@ -142,15 +247,27 @@ jobs:
           echo "====================================="
           echo "SonarQube Analysis Complete"
           echo "====================================="
-          echo "Backend Dashboard:  http://51.20.221.230:9000/dashboard?id=hireflow-backend"
 
+          echo ""
+          echo "Backend Dashboard:"
+          echo "http://51.20.221.230:9000/dashboard?id=hireflow-backend"
+
+          echo ""
+          echo "Frontend Dashboard:"
+          echo "http://51.20.221.230:9000/dashboard?id=hireflow-frontend"
+
+
+  # ============================================================
   # Stage 3 : Dependency Scanning
+  # ============================================================
+
   trivy-deps:
     name: Trivy - Dependency Scanning
     runs-on: ubuntu-latest
     needs: sonarqube-scan
 
     steps:
+
       - name: Display Received Application Information
         run: |
           echo "SecOps Repo received Application trigger for dependency scan"
@@ -204,9 +321,11 @@ jobs:
         run: |
           echo "Trivy Dependency Findings:"
           echo "====================================="
+
           if [ -f "application/trivy-fs-report.json" ]; then
             cat application/trivy-fs-report.json | jq -r '
-              .Results[]? | select(.Vulnerabilities != null) |
+              .Results[]? |
+              select(.Vulnerabilities != null) |
               .Vulnerabilities[] |
               "Package: \(.PkgName)\nInstalled: \(.InstalledVersion)\nFixed In: \(.FixedVersion // "N/A")\nSeverity: \(.Severity)\nCVE: \(.VulnerabilityID)\n---"
             '
@@ -221,13 +340,18 @@ jobs:
           name: trivy-dependency-report
           path: application/trivy-fs-report.json
 
+
+  # ============================================================
   # Stage 4 : Backend - Build, Scan, and Push
+  # ============================================================
+
   build-scan-push-backend:
     name: Backend - Build, Scan & Push
     runs-on: ubuntu-latest
     needs: trivy-deps
 
     steps:
+
       - name: Display Received Application Information
         run: |
           echo "Building backend image for commit ${{ github.event.client_payload.commit_sha }}"
@@ -282,9 +406,11 @@ jobs:
         run: |
           echo "Trivy Backend Image Findings:"
           echo "====================================="
+
           if [ -f "trivy-backend-report.json" ]; then
             cat trivy-backend-report.json | jq -r '
-              .Results[]? | select(.Vulnerabilities != null) |
+              .Results[]? |
+              select(.Vulnerabilities != null) |
               .Vulnerabilities[] |
               "Package: \(.PkgName)\nInstalled: \(.InstalledVersion)\nFixed In: \(.FixedVersion // "N/A")\nSeverity: \(.Severity)\nCVE: \(.VulnerabilityID)\n---"
             '
@@ -299,7 +425,7 @@ jobs:
           name: trivy-backend-image-report
           path: trivy-backend-report.json
 
-      # Only reached if the scan step above passed (exit-code 1 would have stopped the job)
+      # Only reached if the scan step above passed
       - name: Step 5 - Login to GHCR
         uses: docker/login-action@v3
         with:
@@ -320,13 +446,18 @@ jobs:
           docker push ${IMAGE_NAME}:${{ github.event.client_payload.commit_sha }}
           docker push ${IMAGE_NAME}:latest
 
+
+  # ============================================================
   # Stage 5 : Frontend - Build, Scan, and Push
+  # ============================================================
+
   build-scan-push-frontend:
     name: Frontend - Build, Scan & Push
     runs-on: ubuntu-latest
     needs: trivy-deps
 
     steps:
+
       - name: Display Received Application Information
         run: |
           echo "Building frontend image for commit ${{ github.event.client_payload.commit_sha }}"
@@ -382,9 +513,11 @@ jobs:
         run: |
           echo "Trivy Frontend Image Findings:"
           echo "====================================="
+
           if [ -f "trivy-frontend-report.json" ]; then
             cat trivy-frontend-report.json | jq -r '
-              .Results[]? | select(.Vulnerabilities != null) |
+              .Results[]? |
+              select(.Vulnerabilities != null) |
               .Vulnerabilities[] |
               "Package: \(.PkgName)\nInstalled: \(.InstalledVersion)\nFixed In: \(.FixedVersion // "N/A")\nSeverity: \(.Severity)\nCVE: \(.VulnerabilityID)\n---"
             '
